@@ -99,7 +99,12 @@ async function run() {
    
     
 
-
+       app.get('/user/status/:email', async(req, res)=>{
+          const email= req.params.email;
+          const query = {email}
+          const user = await usersCollection.findOne(query);
+          res.send({status: user?.status || 'approve', feedback: user?.feedback})
+        })
 
              app.post("/addLoan", async(req,res) => {
               console.log(req.body);
