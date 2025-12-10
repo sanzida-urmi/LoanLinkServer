@@ -85,7 +85,10 @@ async function run() {
 
 
      //get all loan 
-   
+       app.get('/loan', async (req, res) => {
+      const result = await loanCollection.find().toArray()
+      res.send(result)
+    })
 
     // get single loan by id 
 
