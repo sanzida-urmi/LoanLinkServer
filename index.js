@@ -103,7 +103,16 @@ async function run() {
 
 
 
-
+               app.get("/myApplyLoan", async (req, res) => {
+      const query = {};
+      const { email } = req.query;
+      if (email) {
+        query.email = email;
+      }
+           const cursor = applyLoanCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
 
  
