@@ -77,7 +77,16 @@ async function run() {
 
     
   //get all apply loan 
-     
+       app.get('/applyloanspending', async (req, res) => {
+        console.log("ggggggg")
+        const query ={}
+        const {status} = req.query
+        if(status){
+          query.status = status
+        }
+      const result = await applyLoanCollection.find(query).toArray()
+      res.send(result)
+    })
 
 
     app.get("/loan/status-count", async(req,res)=>{
