@@ -82,7 +82,11 @@ async function run() {
 
 
 
+    app.get("/homeloan", async(req, res)=>{
+  const result = await loanCollection.find({showOnHome: true}).limit(6).toArray();
 
+  res.send(result);
+})
 
      //get all loan 
        app.get('/loan', async (req, res) => {
