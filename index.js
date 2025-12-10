@@ -101,7 +101,29 @@ async function run() {
 
 
 
+             app.post("/addLoan", async(req,res) => {
+              console.log(req.body);
+              try{
+                const {title,shortDescription,loanCategory,maxLoanLimit,interest,document,emiPlans,imgURL,showOnHome,createdBy,createdByEmail} = req.body;
 
+                const newLoan ={
+                  title,createdBy, shortDescription,loanCategory,createdByEmail,document,interest: Number(interest),
+                  maxLoanLimit: Number(maxLoanLimit),
+                  emiPlans,imgURL,createdBy,showOnHome,
+                  date : new Date().toISOString(),
+                }
+
+                // console.log("new", newLoan);
+                const result = await loanCollection.insertOne(newLoan);
+                res.send({
+                  success: true,
+                  message: "success",
+                  data: result,
+                })
+              } catch(error){
+                res.status(500).send({success: false, error: error.message});
+              }
+             })
 
                app.get("/myApplyLoan", async (req, res) => {
       const query = {};
