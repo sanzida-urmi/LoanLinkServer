@@ -108,7 +108,18 @@ async function run() {
 
  
 
+app.get('/export-applied-loans', async(req,res) =>{
+  try{
+    const appliedLoans = await applyLoanCollection.find().toArray();
+    const csv = new Parser().parse(appliedLoans);
+    res.header('Content-type', 'text/csv');
+    res.attachment('applied_loans.csv');
+    res.send(csv);
 
+  } catch (err) {
+    res.status(500).send({error: err.message});
+  }
+})
 
 
 
