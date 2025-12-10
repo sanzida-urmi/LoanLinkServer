@@ -60,7 +60,16 @@ async function run() {
                  // role middlewares
    
 
-   
+     const verifyManager = async (req, res, next) => {
+      const email = req.tokenEmail
+      const user = await usersCollection.findOne({ email })
+      if (user?.role !== 'manager')
+        return res
+          .status(403)
+          .send({ message: 'Manager only Actions!', role: user?.role })
+
+      next()
+    }
 
 
     //   app.get("/applyloanspending", verifyRole(["manager", "admin", "customer"]), async (req, res) => {
