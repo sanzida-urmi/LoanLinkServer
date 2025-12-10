@@ -58,7 +58,16 @@ async function run() {
 
             //  mid 
                  // role middlewares
-   
+    const verifyADMIN = async (req, res, next) => {
+      const email = req.tokenEmail
+      const user = await usersCollection.findOne({ email })
+      if (user?.role !== 'admin')
+        return res
+          .status(403)
+          .send({ message: 'Admin only Actions!', role: user?.role })
+
+      next()
+    }
 
      const verifyManager = async (req, res, next) => {
       const email = req.tokenEmail
