@@ -80,7 +80,20 @@ async function run() {
      
 
 
-
+    app.get("/loan/status-count", async(req,res)=>{
+  try {
+    const pendingCount = await applyLoanCollection.countDocuments({status: "pending"});
+    const approvedCount = await applyLoanCollection.countDocuments({status: "approved"});
+    const rejectedCount = await applyLoanCollection.countDocuments({status: "rejected"});
+    res.send({
+      pending: pendingCount,
+      approved: approvedCount,
+      rejected: rejectedCount
+    });
+  } catch (error) {
+    res.send(500).send({error: "server error"})
+  }
+});
 
     app.get("/homeloan", async(req, res)=>{
   const result = await loanCollection.find({showOnHome: true}).limit(6).toArray();
