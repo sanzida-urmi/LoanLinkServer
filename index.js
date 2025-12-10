@@ -96,7 +96,12 @@ async function run() {
 
           
         // Save a apply loan data in db
-   
+    app.post('/applyloan', async (req, res) => {
+      const applyLoanData = req.body
+      // console.log(plantData)
+      const result = await applyLoanCollection.insertOne(applyLoanData)
+      res.send(result)
+    })
     
 
        app.get('/user/status/:email', async(req, res)=>{
