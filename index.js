@@ -122,7 +122,39 @@ async function run() {
 
 
      // Payment endpoints
-
+    app.post('/create-checkout-session', async (req, res) => {
+      const paymentInfo = req.body
+      // console.log(paymentInfo)
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                // loanID: paymentInfo?.loanID,
+                name: paymentInfo?.title,
+                // title: paymentInfo?.title,
+                // amount: paymentInfo?.amount,
+                // images: [paymentInfo.image],
+              },
+              unit_amount: 10*100,
+            },
+            quantity: 1,
+          },
+        ],
+                customer_email: paymentInfo?.borrower?.email,
+        // borrower_email: paymentInfo?.borrower?.email,
+        mode: 'payment',
+        metadata: {
+          loanID: paymentInfo?.loanID,
+          borrower: paymentInfo?.borrower.email,
+          
+        },
+        success_url: `${process.env.CLIENT_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.CLIENT_DOMAIN}/dashboard/again/${paymentInfo?.loanID}`,
+      })
+      res.send({ url: session.url })
+    })
 
 
       app.post('/payment-success', async (req, res) => {
