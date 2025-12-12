@@ -26,6 +26,7 @@ app.use(
       origin: [process.env.CLIENT_DOMAIN],
     credentials: true,
     optionSuccessStatus: 200,
+    allowedHeaders: ['Content-Type', 'authorization'],
   })
 )
 app.use(express.json());
@@ -33,7 +34,7 @@ app.use(express.json());
 // jwt middlewares
 const verifyJWT = async (req, res, next) => {
   const token = req?.headers?.authorization?.split(' ')[1]
-  console.log(token)
+  console.log("req header---->", req.headers?.authorization);
   if (!token) return res.status(401).send({ message: 'Unauthorized Access!' })
   try {
     const decoded = await admin.auth().verifyIdToken(token)
@@ -61,20 +62,48 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
      const db = client.db('ass')
     const usersCollection = db.collection('users')
     const loanCollection = db.collection('loan')
         const applyLoanCollection = db.collection('applyloan')
              const paymentCollection = db.collection('payment')
+             const serviceCollection = db.collection('service')
+             const commentCollection = db.collection('comment')
 
 
             //  mid 
                  // role middlewares
     const verifyADMIN = async (req, res, next) => {
       const email = req.tokenEmail
+      console.log(email);
       const user = await usersCollection.findOne({ email })
+      console.log(user?.role);
       if (user?.role !== 'admin')
+        return res
+          .status(403)
+          .send({ message: 'Admin only Actions!', role: user?.role })
+
+      next()
+    }
+    const verifyADMINandManager = async (req, res, next) => {
+      const email = req.tokenEmail
+      console.log(email);
+      const user = await usersCollection.findOne({ email })
+      console.log("admin or manager---",user?.role);
+      if (user?.role == 'borrower')
+        return res
+          .status(403)
+          .send({ message: 'Admin only Actions!', role: user?.role })
+
+      next()
+    }
+    const verifyUser = async (req, res, next) => {
+      const email = req.tokenEmail
+      console.log(email);
+      const user = await usersCollection.findOne({ email })
+      console.log(user?.role);
+      if (user?.role !== 'borrower')
         return res
           .status(403)
           .send({ message: 'Admin only Actions!', role: user?.role })
@@ -85,6 +114,7 @@ async function run() {
      const verifyManager = async (req, res, next) => {
       const email = req.tokenEmail
       const user = await usersCollection.findOne({ email })
+       console.log(user?.role);
       if (user?.role !== 'manager')
         return res
           .status(403)
@@ -93,23 +123,10 @@ async function run() {
       next()
     }
 
-
-    //   app.get("/applyloanspending", verifyRole(["manager", "admin", "customer"]), async (req, res) => {
-    //   const query = {};
-    //   const { status } = req.query;
-    //   if (status) {
-    //     query.status = status;
-    //   }
-     
-    //   const cursor = applyLoanCollection.find(query);
-    //   const result = await cursor.toArray();
-    //   res.send(result);
-    // }); 
-
     
   //get all apply loan 
-       app.get('/applyloanspending', async (req, res) => {
-        console.log("ggggggg")
+       app.get('/applyloanspending',verifyJWT,verifyADMINandManager, async (req, res) => {
+        // console.log("ggggggg")
         const query ={}
         const {status} = req.query
         if(status){
@@ -120,7 +137,7 @@ async function run() {
     })
 
 
-    app.get("/loan/status-count", async(req,res)=>{
+    app.get("/loan/status-count",verifyJWT, async(req,res)=>{
   try {
     const pendingCount = await applyLoanCollection.countDocuments({status: "pending"});
     const approvedCount = await applyLoanCollection.countDocuments({status: "approved"});
@@ -136,6 +153,7 @@ async function run() {
 });
 
     app.get("/homeloan", async(req, res)=>{
+      console.log("home");
   const result = await loanCollection.find({showOnHome: true}).limit(6).toArray();
 
   res.send(result);
@@ -156,6 +174,7 @@ async function run() {
     })
 
        app.get('/user/role/:email', async(req, res)=>{
+        console.log("role hit")
           const email= req.params.email;
           const query = {email}
           const user = await usersCollection.findOne(query);
@@ -165,7 +184,7 @@ async function run() {
 
           
         // Save a apply loan data in db
-    app.post('/applyloan', async (req, res) => {
+    app.post('/applyloan',verifyJWT, async (req, res) => {
       const applyLoanData = req.body
       // console.log(plantData)
       const result = await applyLoanCollection.insertOne(applyLoanData)
@@ -180,7 +199,7 @@ async function run() {
           res.send({status: user?.status || 'approve', feedback: user?.feedback})
         })
 
-             app.post("/addLoan", async(req,res) => {
+             app.post("/addLoan",verifyJWT,verifyADMINandManager, async(req,res) => {
               console.log(req.body);
               try{
                 const {title,shortDescription,loanCategory,maxLoanLimit,interest,document,emiPlans,imgURL,showOnHome,createdBy,createdByEmail} = req.body;
@@ -204,7 +223,7 @@ async function run() {
               }
              })
 
-               app.get("/myApplyLoan", async (req, res) => {
+               app.get("/myApplyLoan",verifyJWT,verifyUser, async (req, res) => {
       const query = {};
       const { email } = req.query;
       if (email) {
@@ -231,11 +250,7 @@ app.get('/export-applied-loans', async(req,res) =>{
   }
 })
 
-
-
-
-
-             app.get("/users", async (req,res) => {
+             app.get("/users",verifyJWT,verifyADMIN, async (req,res) => {
 
              const result = await usersCollection.find().toArray()
       res.send(result)
@@ -267,9 +282,7 @@ app.get('/export-applied-loans', async(req,res) =>{
               product_data: {
                 // loanID: paymentInfo?.loanID,
                 name: paymentInfo?.title,
-                // title: paymentInfo?.title,
-                // amount: paymentInfo?.amount,
-                // images: [paymentInfo.image],
+               
               },
               unit_amount: 10*100,
             },
@@ -345,41 +358,20 @@ app.delete('/applyloan/:id', async (req,res)=>{
   const result = await applyLoanCollection.deleteOne({_id: new ObjectId(id)});
   res.send(result);
 })
-// dlt one loan 
-app.delete('/oneloan/:id', async (req,res)=>{
+
+
+
+
+app.delete('/oneloan/:id',verifyJWT,verifyADMINandManager, async(req,res)=>{
   const {id} = req.params;
   const result = await loanCollection.deleteOne({_id: new ObjectId(id)});
-  // cpy 
-      const applyDelete = await applyLoanCollection.deleteMany({ loanID: id });
-
+  const applyDelete = await applyLoanCollection.deleteMany({ loanID: id });
   res.send(result,applyDelete);
 })
 
-
      
-    // cpy 
-    // Update status of an applied loan
-// app.patch('/applyloan/status/:id', async (req, res) => {
-//   const id = req.params.id;
-//   const { status } = req.body; // "approved" বা "rejected"
-
-//   try {
-//     const result = await applyLoanCollection.updateOne(
-//       { _id: new ObjectId(id) },
-//       { $set: { status } }
-//     );
-
-//     res.send({
-//       success: true,
-//       modifiedCount: result.modifiedCount
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).send({ success: false, error: error.message });
-//   }
-// });
-
-app.patch('/applyloan/status/:id', async (req,res)=>{
+    app.patch('/applyloan/status/:id',verifyJWT,verifyManager, async (req,res)=>{
+      console.log("ss")
   const id = req.params.id;
   const {status} = req.body;
   try{
@@ -408,10 +400,12 @@ updateData.approved_at = new Date().toISOString();
 
      // user update 
       app.post('/user', async (req,res)=>{
-        const userData = req.body
+        let userData = req.body
+
+userData.role = userData.role ? userData.role : "borrower";
         userData.created_at = new Date().toISOString()
         userData.last_loggedIn = new Date().toISOString()
-        userData.role = 'customer'
+        // userData.role = 'customer'
 
 
           const query = {
@@ -437,13 +431,8 @@ updateData.approved_at = new Date().toISOString();
       })
 
      
-    
 
-    
-
-  
-
-     app.get('/allloan', async(req, res)=>{
+     app.get('/allloan',verifyJWT,verifyManager, async(req, res)=>{
       console.log("faiza");
           const email= req.query.email;
           const result = await loanCollection.find({createdByEmail: email}).toArray();
@@ -460,7 +449,7 @@ updateData.approved_at = new Date().toISOString();
           res.send({role: user?.role || 'borrower'})
         })
 
-         app.patch('/updateuser', async (req, res) => {
+         app.patch('/updateuser',verifyJWT,verifyADMIN, async (req, res) => {
       const { email, reason,feedback,status } = req.body
       // console.log(email,reason,feedback);
       const result = await usersCollection.updateOne(
@@ -473,7 +462,7 @@ updateData.approved_at = new Date().toISOString();
 
 
 
-app.patch("/loan/show/:id", async(req,res)=>{
+app.patch("/loan/show/:id",verifyJWT,verifyADMIN, async(req,res)=>{
   const id = req.params.id;
   const {value} = req.body;
   const result = await loanCollection.updateOne(
@@ -484,7 +473,7 @@ app.patch("/loan/show/:id", async(req,res)=>{
 })
 
 // update 
-app.patch("/loan/update/:id", async(req,res)=>{
+app.patch("/loan/update/:id",verifyJWT,verifyADMINandManager, async(req,res)=>{
   const id = req.params.id;
   const {updateData} = req.body;
 
@@ -504,19 +493,24 @@ app.patch("/loan/update/:id", async(req,res)=>{
 })
 
 
+  //get all service 
+       app.get('/service', async (req, res) => {
+      const result = await serviceCollection.find().toArray()
+      res.send(result)
+    })
 
 
+  //get all cmnt 
+       app.get('/cmnt', async (req, res) => {
+      const result = await commentCollection.find().toArray()
+      res.send(result)
+    })
 
 
-    //  // get a user's role
-    // app.get('/user/role/', async (req, res) => {
-    //   const result = await usersCollection.findOne({ email: req.tokenEmail })
-    //   res.send({ role: result?.role })
-    // })
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -526,7 +520,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Hello oo!')
+  res.send('Hello server!')
 })
 
 app.listen(port, () => {
