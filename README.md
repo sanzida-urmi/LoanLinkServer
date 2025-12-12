@@ -3,7 +3,7 @@ Microloan Request & Approval Tracker System
 LoanLink is a web-based microloan request, review & approval management system.
  Many small financial organizations, NGOs, and microloan providers struggle to maintain loan applications, verification, approvals, EMI schedules, and repayments in one streamlined system.
 
- Live URL : https://client-11-3146c.web.app/
+ Live URL : https://client-11-3146c.web.app
  server URL: https://lonklinkserver.vercel.app
 
 
