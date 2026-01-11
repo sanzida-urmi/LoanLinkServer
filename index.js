@@ -153,9 +153,9 @@ async function run() {
 });
 
     app.get("/homeloan", async(req, res)=>{
-      console.log("home");
-  const result = await loanCollection.find({showOnHome: true}).limit(6).toArray();
-
+      
+  const result = await loanCollection.find({showOnHome: true}).limit(8).toArray();
+console.log(result);
   res.send(result);
 })
 
